@@ -15,6 +15,11 @@ enum GameState {
 
 class Game {
 private:
+    static constexpr float VELOCIDAD_BASE = 60.0f;
+    static constexpr int TIEMPO_PARTIDA_DEFAULT = 180;
+    static constexpr int PUNTOS_VICTORIA = 1000;
+    static constexpr int PUNTOS_KILL = 100;
+
     // Variables del juego
     sf::RenderWindow& window;
     GameState gameState;
@@ -47,7 +52,7 @@ public:
         window(window),
         gameState(MENU),
         juegoTerminado(false),
-        tiempoPartida(180),
+        tiempoPartida(TIEMPO_PARTIDA_DEFAULT),
         nivel(1),
         puntajeJ1(0),
         puntajeJ2(0),
@@ -56,8 +61,13 @@ public:
         bombaActiva1(false),
         bombaActiva2(false)
     {
-        initializeUI();
-        AudioManager::getInstance().playMusica();
+        try {
+            initializeUI();
+            AudioManager::getInstance().playMusica();
+        } catch (const std::exception& e) {
+            std::cerr << "Error initializing game: " << e.what() << std::endl;
+            throw;
+        }
     }
 
     void initializeUI() {
@@ -96,10 +106,10 @@ public:
             if (it->terminada) {
                 if (it->esJugador1) {
                     bombaActiva1 = false;
-                    if (it->hitEnemigo) puntajeJ1 += 100;
+                    if (it->hitEnemigo) puntajeJ1 += PUNTOS_KILL;
                 } else {
                     bombaActiva2 = false;
-                    if (it->hitEnemigo) puntajeJ2 += 100;
+                    if (it->hitEnemigo) puntajeJ2 += PUNTOS_KILL;
                 }
                 it = bombas.erase(it);
             } else {
@@ -107,9 +117,33 @@ public:
             }
         }
 
+        // Verificar powerups para jugador 1
+        sf::Vector2i pos1(
+            static_cast<int>(jugador1.getPosition().x / Mapa::tile),
+            static_cast<int>(jugador1.getPosition().y / Mapa::tile)
+        );
+        int tile1 = mapa.getTile(pos1.x, pos1.y);
+        if (tile1 >= Mapa::POWERUP_BOMBA && tile1 <= Mapa::POWERUP_ATRAVESAR) {
+            jugador1.recogerPowerup(tile1);
+            mapa.setTile(pos1.x, pos1.y, Mapa::PISO);
+            AudioManager::getInstance().playPowerup();
+        }
+
+        // Verificar powerups para jugador 2
+        sf::Vector2i pos2(
+            static_cast<int>(jugador2.getPosition().x / Mapa::tile),
+            static_cast<int>(jugador2.getPosition().y / Mapa::tile)
+        );
+        int tile2 = mapa.getTile(pos2.x, pos2.y);
+        if (tile2 >= Mapa::POWERUP_BOMBA && tile2 <= Mapa::POWERUP_ATRAVESAR) {
+            jugador2.recogerPowerup(tile2);
+            mapa.setTile(pos2.x, pos2.y, Mapa::PISO);
+            AudioManager::getInstance().playPowerup();
+        }
+
         // Movimiento jugadores
         float deltaTime = gameClock.restart().asSeconds();
-        float velocidad = 60.0f * deltaTime;
+        float velocidad = VELOCIDAD_BASE * deltaTime;
         
         updatePlayerMovement(jugador1, velocidad, 
             sf::Keyboard::W, sf::Keyboard::S, 
@@ -145,11 +179,11 @@ public:
             AudioManager::getInstance().stopMusica();
         }
         else if (jugador1.estaVivo && !jugador2.estaVivo) {
-            puntajeJ1 += 1000;
+            puntajeJ1 += PUNTOS_VICTORIA;
             siguienteNivel();
         }
         else if (!jugador1.estaVivo && jugador2.estaVivo) {
-            puntajeJ2 += 1000;
+            puntajeJ2 += PUNTOS_VICTORIA;
             siguienteNivel();
         }
     }
@@ -195,31 +229,25 @@ public:
     }
 
     void handlePlayingInput(sf::Event& event) {
-        // Mover el código existente de handleInput aquí
-        // Colocar bomba del jugador 1 (Espacio)
-        if (event.type == sf::Event::KeyPressed && 
-            event.key.code == sf::Keyboard::Space && 
-            !bombaActiva1) {
-            sf::Vector2i gridPos(
-                static_cast<int>(jugador1.getPosition().x / Mapa::tile),
-                static_cast<int>(jugador1.getPosition().y / Mapa::tile)
-            );
-            bombas.emplace_back(gridPos);
-            bombaActiva1 = true;
-            AudioManager::getInstance().playExplosion(); // Sonido al colocar bomba
-        }
-
-        // Colocar bomba del jugador 2 (Enter)
-        if (event.type == sf::Event::KeyPressed && 
-            event.key.code == sf::Keyboard::Enter && 
-            !bombaActiva2) {
-            sf::Vector2i gridPos(
-                static_cast<int>(jugador2.getPosition().x / Mapa::tile),
-                static_cast<int>(jugador2.getPosition().y / Mapa::tile)
-            );
-            bombas.emplace_back(gridPos);
-            bombaActiva2 = true;
-            AudioManager::getInstance().playExplosion(); // Sonido al colocar bomba
+        if (event.type == sf::Event::KeyPressed) {
+            if (event.key.code == sf::Keyboard::Space && !bombaActiva1) {
+                sf::Vector2i gridPos(
+                    static_cast<int>((jugador1.getPosition().x + Mapa::tile/2) / Mapa::tile),
+                    static_cast<int>((jugador1.getPosition().y + Mapa::tile/2) / Mapa::tile)
+                );
+                bombas.emplace_back(gridPos, true); // true para jugador1
+                bombaActiva1 = true;
+                AudioManager::getInstance().playExplosion();
+            }
+            else if (event.key.code == sf::Keyboard::Enter && !bombaActiva2) {
+                sf::Vector2i gridPos(
+                    static_cast<int>((jugador2.getPosition().x + Mapa::tile/2) / Mapa::tile),
+                    static_cast<int>((jugador2.getPosition().y + Mapa::tile/2) / Mapa::tile)
+                );
+                bombas.emplace_back(gridPos, false); // false para jugador2
+                bombaActiva2 = true;
+                AudioManager::getInstance().playExplosion();
+            }
         }
     }
 
@@ -229,7 +257,7 @@ public:
         nivel = 1;
         puntajeJ1 = 0;
         puntajeJ2 = 0;
-        tiempoPartida = 180;
+        tiempoPartida = TIEMPO_PARTIDA_DEFAULT;
         bombaActiva1 = false;
         bombaActiva2 = false;
         bombas.clear();
@@ -262,11 +290,22 @@ public:
         window.display();
     }
 
+    void renderText(sf::Text& text, const std::string& str, float x, float y, bool centered = false) {
+        text.setString(str);
+        if (centered) {
+            sf::FloatRect bounds = text.getLocalBounds();
+            text.setOrigin(bounds.width / 2.0f, bounds.height / 2.0f);
+        }
+        text.setPosition(x, y);
+        window.draw(text);
+    }
+
     void renderMenu() {
         sf::Text menuText;
-        configureText(menuText, "BOMBERMAN\nPresiona ENTER para jugar", window.getSize().x/2, window.getSize().y/2);
-        menuText.setOrigin(menuText.getLocalBounds().width/2, menuText.getLocalBounds().height/2);
-        window.draw(menuText);
+        configureText(menuText, "BOMBERMAN\nPresiona ENTER para jugar", 
+                     window.getSize().x/2.0f, window.getSize().y/2.0f);
+        renderText(menuText, menuText.getString(), menuText.getPosition().x, 
+                  menuText.getPosition().y, true);
     }
 
     void renderGame() {

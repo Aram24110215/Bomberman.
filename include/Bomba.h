@@ -65,175 +65,157 @@ public:
     }
 
     void update(Mapa& mapa, Personaje& jugador1, Personaje& jugador2) {
-        // Actualizar la animación de la bomba
-        if (!explotada && animationClock.getElapsedTime().asSeconds() >= frameTime) {
-            currentFrame = (currentFrame + 1) % numFrames; // Cambiar al siguiente frame
-            bombaSprite.setTextureRect(sf::IntRect(currentFrame * frameWidth, 0, frameWidth, frameHeight));
-            animationClock.restart();
-        }
+        if (!explotada) {
+            // Animación de la bomba antes de explotar
+            if (animationClock.getElapsedTime().asSeconds() >= 0.5f) {
+                currentFrame = (currentFrame + 1) % numFrames;
+                bombaSprite.setTextureRect(sf::IntRect(currentFrame * frameWidth, 0, frameWidth, frameHeight));
+                animationClock.restart();
+            }
 
-        // Verificar si la bomba debe estallar
-        if (timer.getElapsedTime().asSeconds() >= explosionTime && !explotada) {
-            explotar(mapa, jugador1, jugador2); // Pasar los jugadores como argumentos
-        }
+            // Verificar si es tiempo de explotar
+            if (timer.getElapsedTime().asSeconds() >= explosionTime) {
+                explotada = true;
+                enExpansion = true;
+                currentFrame = 0; // Reiniciar frame para la animación de explosión
+                animationClock.restart();
+                explotar(mapa, jugador1, jugador2);
+            }
+        } 
+        else if (enExpansion) {
+            // Animación de la explosión
+            if (animationClock.getElapsedTime().asSeconds() >= 0.1f) {
+                currentFrame = (currentFrame + 1) % numFramesExplosion;
+                
+                // Actualizar frames de todos los sprites de explosión
+                centerSprite.setTextureRect(sf::IntRect(currentFrame * frameWidth, 0, frameWidth, frameHeight));
+                secondSprite.setTextureRect(sf::IntRect(currentFrame * frameWidth, 0, frameWidth, frameHeight));
+                lastSprite.setTextureRect(sf::IntRect(currentFrame * frameWidth, 0, frameWidth, frameHeight));
+                
+                animationClock.restart();
 
-        // Actualizar la animación de la explosión
-        if (enExpansion && animationClock.getElapsedTime().asSeconds() >= frameTime) {
-            currentFrame = (currentFrame + 1) % numFramesExplosion; // Cambiar al siguiente frame
-            
-            // Actualizar los frames de animación
-            centerSprite.setTextureRect(sf::IntRect(currentFrame * frameWidth, 0, frameWidth, frameHeight));
-            secondSprite.setTextureRect(sf::IntRect(currentFrame * frameWidth, 0, frameWidth, frameHeight));
-            lastSprite.setTextureRect(sf::IntRect(currentFrame * frameWidth, 0, frameWidth, frameHeight));
-            
-            animationClock.restart();
-
-            // Marcar la bomba como terminada cuando la animación se completa
-            if (currentFrame == numFramesExplosion - 1) {
-                enExpansion = false;
-                terminada = true; // Marcar la explosión como terminada
+                // Terminar la explosión después de completar la animación
+                if (currentFrame == numFramesExplosion - 1 && 
+                    timer.getElapsedTime().asSeconds() >= explosionTime + 1.0f) {
+                    terminada = true;
+                    enExpansion = false;
+                }
             }
         }
     }
 
     void explotar(Mapa& mapa, Personaje& jugador1, Personaje& jugador2) {
-        // Destruir el bloque donde está la bomba y los bloques adyacentes
-        if (mapa.grid[gridPos.y][gridPos.x] == 2) {
+        // Centro de la explosión
+        if (mapa.esDestructible(gridPos.x, gridPos.y)) {
             mapa.destruirBloque(gridPos.x, gridPos.y);
         }
 
-        for (int i = 1; i <= 2; ++i) { // Onda de expansión de 2 bloques
+        // Explotar en las cuatro direcciones
+        for (int i = 1; i <= 2; ++i) {
             // Derecha
-            if (gridPos.x + i < Mapa::ancho && !mapa.esSolido(gridPos.x + i, gridPos.y)) {
-                mapa.destruirBloque(gridPos.x + i, gridPos.y);
-                if (sf::Vector2i(gridPos.x + i, gridPos.y) == sf::Vector2i(static_cast<int>(jugador1.getPosition().x / Mapa::tile),
-                                                                           static_cast<int>(jugador1.getPosition().y / Mapa::tile))) {
-                    jugador1 = Personaje(sf::Vector2f(Mapa::tile, Mapa::tile)); // Reiniciar jugador 1
+            if (gridPos.x + i < Mapa::ancho) {
+                // Verificar si hay un bloque sólido que detenga la explosión
+                if (mapa.grid[gridPos.y][gridPos.x + i] == Mapa::BLOQUE_SOLIDO || 
+                    mapa.grid[gridPos.y][gridPos.x + i] == Mapa::BORDE_DER) {
+                    break;
                 }
-                if (sf::Vector2i(gridPos.x + i, gridPos.y) == sf::Vector2i(static_cast<int>(jugador2.getPosition().x / Mapa::tile),
-                                                                           static_cast<int>(jugador2.getPosition().y / Mapa::tile))) {
-                    jugador2 = Personaje(sf::Vector2f((Mapa::ancho - 2) * Mapa::tile, (Mapa::alto - 2) * Mapa::tile)); // Reiniciar jugador 2
+                // Si es destructible, destruirlo y continuar la explosión
+                if (mapa.esDestructible(gridPos.x + i, gridPos.y)) {
+                    mapa.destruirBloque(gridPos.x + i, gridPos.y);
                 }
-            }
-
-            // Izquierda
-            if (gridPos.x - i >= 0 && !mapa.esSolido(gridPos.x - i, gridPos.y)) {
-                mapa.destruirBloque(gridPos.x - i, gridPos.y);
-                if (sf::Vector2i(gridPos.x - i, gridPos.y) == sf::Vector2i(static_cast<int>(jugador1.getPosition().x / Mapa::tile),
-                                                                           static_cast<int>(jugador1.getPosition().y / Mapa::tile))) {
-                    jugador1 = Personaje(sf::Vector2f(Mapa::tile, Mapa::tile)); // Reiniciar jugador 1
-                }
-                if (sf::Vector2i(gridPos.x - i, gridPos.y) == sf::Vector2i(static_cast<int>(jugador2.getPosition().x / Mapa::tile),
-                                                                           static_cast<int>(jugador2.getPosition().y / Mapa::tile))) {
-                    jugador2 = Personaje(sf::Vector2f((Mapa::ancho - 2) * Mapa::tile, (Mapa::alto - 2) * Mapa::tile)); // Reiniciar jugador 2
-                }
-            }
-
-            // Abajo
-            if (gridPos.y + i < Mapa::alto && !mapa.esSolido(gridPos.x, gridPos.y + i)) {
-                mapa.destruirBloque(gridPos.x, gridPos.y + i);
-                if (sf::Vector2i(gridPos.x, gridPos.y + i) == sf::Vector2i(static_cast<int>(jugador1.getPosition().x / Mapa::tile),
-                                                                           static_cast<int>(jugador1.getPosition().y / Mapa::tile))) {
-                    jugador1 = Personaje(sf::Vector2f(Mapa::tile, Mapa::tile)); // Reiniciar jugador 1
-                }
-                if (sf::Vector2i(gridPos.x, gridPos.y + i) == sf::Vector2i(static_cast<int>(jugador2.getPosition().x / Mapa::tile),
-                                                                           static_cast<int>(jugador2.getPosition().y / Mapa::tile))) {
-                    jugador2 = Personaje(sf::Vector2f((Mapa::ancho - 2) * Mapa::tile, (Mapa::alto - 2) * Mapa::tile)); // Reiniciar jugador 2
-                }
-            }
-
-            // Arriba
-            if (gridPos.y - i >= 0 && !mapa.esSolido(gridPos.x, gridPos.y - i)) {
-                mapa.destruirBloque(gridPos.x, gridPos.y - i);
-                if (sf::Vector2i(gridPos.x, gridPos.y - i) == sf::Vector2i(static_cast<int>(jugador1.getPosition().x / Mapa::tile),
-                                                                           static_cast<int>(jugador1.getPosition().y / Mapa::tile))) {
-                    jugador1 = Personaje(sf::Vector2f(Mapa::tile, Mapa::tile)); // Reiniciar jugador 1
-                }
-                if (sf::Vector2i(gridPos.x, gridPos.y - i) == sf::Vector2i(static_cast<int>(jugador2.getPosition().x / Mapa::tile),
-                                                                           static_cast<int>(jugador2.getPosition().y / Mapa::tile))) {
-                    jugador2 = Personaje(sf::Vector2f((Mapa::ancho - 2) * Mapa::tile, (Mapa::alto - 2) * Mapa::tile)); // Reiniciar jugador 2
-                }
+                // Verificar colisión con jugadores
+                checkPlayerCollision(gridPos.x + i, gridPos.y, jugador1, jugador2);
             }
         }
-        explotada = true; // Marcar la bomba como explotada
-        enExpansion = true; // Activar la expansión
+
+        // Izquierda
+        for (int i = 1; i <= 2; ++i) {
+            if (gridPos.x - i >= 0) {
+                if (mapa.grid[gridPos.y][gridPos.x - i] == Mapa::BLOQUE_SOLIDO || 
+                    mapa.grid[gridPos.y][gridPos.x - i] == Mapa::BORDE_IZQ) {
+                    break;
+                }
+                if (mapa.esDestructible(gridPos.x - i, gridPos.y)) {
+                    mapa.destruirBloque(gridPos.x - i, gridPos.y);
+                }
+                checkPlayerCollision(gridPos.x - i, gridPos.y, jugador1, jugador2);
+            }
+        }
+
+        // Abajo
+        for (int i = 1; i <= 2; ++i) {
+            if (gridPos.y + i < Mapa::alto) {
+                if (mapa.grid[gridPos.y + i][gridPos.x] == Mapa::BLOQUE_SOLIDO || 
+                    mapa.grid[gridPos.y + i][gridPos.x] == Mapa::BORDE_ABAJO) {
+                    break;
+                }
+                if (mapa.esDestructible(gridPos.x, gridPos.y + i)) {
+                    mapa.destruirBloque(gridPos.x, gridPos.y + i);
+                }
+                checkPlayerCollision(gridPos.x, gridPos.y + i, jugador1, jugador2);
+            }
+        }
+
+        // Arriba
+        for (int i = 1; i <= 2; ++i) {
+            if (gridPos.y - i >= 0) {
+                if (mapa.grid[gridPos.y - i][gridPos.x] == Mapa::BLOQUE_SOLIDO || 
+                    mapa.grid[gridPos.y - i][gridPos.x] == Mapa::BORDE_TOP) {
+                    break;
+                }
+                if (mapa.esDestructible(gridPos.x, gridPos.y - i)) {
+                    mapa.destruirBloque(gridPos.x, gridPos.y - i);
+                }
+                checkPlayerCollision(gridPos.x, gridPos.y - i, jugador1, jugador2);
+            }
+        }
+
+        explotada = true;
+        enExpansion = true;
     }
 
     void draw(sf::RenderWindow& window, Mapa& mapa) {
         if (!explotada) {
-            bombaSprite.setPosition(gridPos.x * Mapa::tile, gridPos.y * Mapa::tile); // Centrar la bomba en el bloque
+            bombaSprite.setPosition(gridPos.x * Mapa::tile, gridPos.y * Mapa::tile);
             window.draw(bombaSprite);
-        } else if (enExpansion) {
-            // Configurar el origen del sprite para que esté centrado
-            centerSprite.setOrigin(frameWidth / 2, frameHeight / 2);
-            secondSprite.setOrigin(frameWidth / 2, frameHeight / 2);
-            lastSprite.setOrigin(frameWidth / 2, frameHeight / 2);
+        } 
+        else if (enExpansion) {
+            // Centro de la explosión
+            centerSprite.setPosition(gridPos.x * Mapa::tile, gridPos.y * Mapa::tile);
+            window.draw(centerSprite);
 
-            // Dibujar el centro de la explosión
-            if (!mapa.esSolido(gridPos.x, gridPos.y)) {
-                centerSprite.setPosition(gridPos.x * Mapa::tile + Mapa::tile / 2, gridPos.y * Mapa::tile + Mapa::tile / 2);
-                window.draw(centerSprite);
-            }
-
-            // Dibujar el segundo bloque de la explosión
-            for (int i = 1; i <= 1; ++i) {
+            // Dibujar explosión en cruz
+            for (int i = 1; i <= 2; ++i) {
                 // Derecha
-                if (gridPos.x + i < Mapa::ancho && !mapa.esSolido(gridPos.x + i, gridPos.y)) {
-                    secondSprite.setRotation(0); // Sin rotación
-                    secondSprite.setPosition((gridPos.x + i) * Mapa::tile + Mapa::tile / 2, gridPos.y * Mapa::tile + Mapa::tile / 2);
-                    window.draw(secondSprite);
+                if (validarPosicionExplosion(gridPos.x + i, gridPos.y, mapa)) {
+                    sf::Sprite& sprite = (i == 1) ? secondSprite : lastSprite;
+                    sprite.setRotation(0);
+                    sprite.setPosition((gridPos.x + i) * Mapa::tile, gridPos.y * Mapa::tile);
+                    window.draw(sprite);
                 }
 
                 // Izquierda
-                if (gridPos.x - i >= 0 && !mapa.esSolido(gridPos.x - i, gridPos.y)) {
-                    secondSprite.setRotation(180); // Rotar hacia la izquierda
-                    secondSprite.setPosition((gridPos.x - i) * Mapa::tile + Mapa::tile / 2, gridPos.y * Mapa::tile + Mapa::tile / 2);
-                    window.draw(secondSprite);
+                if (validarPosicionExplosion(gridPos.x - i, gridPos.y, mapa)) {
+                    sf::Sprite& sprite = (i == 1) ? secondSprite : lastSprite;
+                    sprite.setRotation(180);
+                    sprite.setPosition((gridPos.x - i) * Mapa::tile + Mapa::tile, gridPos.y * Mapa::tile + Mapa::tile);
+                    window.draw(sprite);
                 }
 
                 // Abajo
-                if (gridPos.y + i < Mapa::alto && !mapa.esSolido(gridPos.x, gridPos.y + i)) {
-                    secondSprite.setRotation(90); // Rotar hacia abajo
-                    secondSprite.setPosition(gridPos.x * Mapa::tile + Mapa::tile / 2, (gridPos.y + i) * Mapa::tile + Mapa::tile / 2);
-                    window.draw(secondSprite);
+                if (validarPosicionExplosion(gridPos.x, gridPos.y + i, mapa)) {
+                    sf::Sprite& sprite = (i == 1) ? secondSprite : lastSprite;
+                    sprite.setRotation(90);
+                    sprite.setPosition(gridPos.x * Mapa::tile + Mapa::tile, (gridPos.y + i) * Mapa::tile);
+                    window.draw(sprite);
                 }
 
                 // Arriba
-                if (gridPos.y - i >= 0 && !mapa.esSolido(gridPos.x, gridPos.y - i)) {
-                    secondSprite.setRotation(270); // Rotar hacia arriba
-                    secondSprite.setPosition(gridPos.x * Mapa::tile + Mapa::tile / 2, (gridPos.y - i) * Mapa::tile + Mapa::tile / 2);
-                    window.draw(secondSprite);
-                }
-            }
-
-            // Dibujar el último bloque de la explosión
-            for (int i = 2; i <= 2; ++i) {
-                // Derecha
-                if (gridPos.x + i < Mapa::ancho && !mapa.esSolido(gridPos.x + i, gridPos.y)) {
-                    lastSprite.setRotation(0); // Sin rotación
-                    lastSprite.setPosition((gridPos.x + i) * Mapa::tile + Mapa::tile / 2, gridPos.y * Mapa::tile + Mapa::tile / 2);
-                    window.draw(lastSprite);
-                }
-
-                // Izquierda
-                if (gridPos.x - i >= 0 && !mapa.esSolido(gridPos.x - i, gridPos.y)) {
-                    lastSprite.setRotation(180); // Rotar hacia la izquierda
-                    lastSprite.setPosition((gridPos.x - i) * Mapa::tile + Mapa::tile / 2, gridPos.y * Mapa::tile + Mapa::tile / 2);
-                    window.draw(lastSprite);
-                }
-
-                // Abajo
-                if (gridPos.y + i < Mapa::alto && !mapa.esSolido(gridPos.x, gridPos.y + i)) {
-                    lastSprite.setRotation(90); // Rotar hacia abajo
-                    lastSprite.setPosition(gridPos.x * Mapa::tile + Mapa::tile / 2, (gridPos.y + i) * Mapa::tile + Mapa::tile / 2);
-                    window.draw(lastSprite);
-                }
-
-                // Arriba
-                if (gridPos.y - i >= 0 && !mapa.esSolido(gridPos.x, gridPos.y - i)) {
-                    lastSprite.setRotation(270); // Rotar hacia arriba
-                    lastSprite.setPosition(gridPos.x * Mapa::tile + Mapa::tile / 2, (gridPos.y - i) * Mapa::tile + Mapa::tile / 2);
-                    window.draw(lastSprite);
+                if (validarPosicionExplosion(gridPos.x, gridPos.y - i, mapa)) {
+                    sf::Sprite& sprite = (i == 1) ? secondSprite : lastSprite;
+                    sprite.setRotation(270);
+                    sprite.setPosition(gridPos.x * Mapa::tile, (gridPos.y - i) * Mapa::tile + Mapa::tile);
+                    window.draw(sprite);
                 }
             }
         }
@@ -257,4 +239,51 @@ private:
     int currentFrame = 0; // Frame actual
     float frameTime = 1.0f; // Tiempo entre cada frame en segundos (1 segundo por frame)
     float explosionTime = 3.0f; // Tiempo antes de que la bomba explote (en segundos)
+
+    bool checkExplosion(Mapa& mapa, int x, int y) {
+        if (x < 0 || x >= Mapa::ancho || y < 0 || y >= Mapa::alto) {
+            return false;
+        }
+
+        int tile = mapa.grid[y][x];
+        
+        // Si es un bloque destructible
+        if (tile == Mapa::BLOQUE_DESTRUCTIBLE || tile == Mapa::MURO_DESTRUCTIBLE) {
+            mapa.destruirBloque(x, y);
+            return false;  // Detener la explosión
+        }
+        
+        // Si es un bloque sólido o borde
+        if (tile == Mapa::BLOQUE_SOLIDO || 
+            tile == Mapa::BORDE_IZQ || tile == Mapa::BORDE_TOP || 
+            tile == Mapa::BORDE_DER_TOP || tile == Mapa::BORDE_DER || 
+            tile == Mapa::BORDE_ABAJO || tile == Mapa::BORDE_ABAJO || 
+            tile == Mapa::BORDE_IZQ_ABAJO) {
+            return false;  // Detener la explosión
+        }
+
+        return true;  // Continuar la explosión
+    }
+
+    bool validarPosicionExplosion(int x, int y, const Mapa& mapa) {
+        return x >= 0 && x < Mapa::ancho && y >= 0 && y < Mapa::alto && !mapa.esSolido(x, y);
+    }
+
+    void checkPlayerCollision(int x, int y, Personaje& jugador1, Personaje& jugador2) {
+        // Verificar colisión con jugador 1
+        if (sf::Vector2i(x, y) == sf::Vector2i(
+            static_cast<int>(jugador1.getPosition().x / Mapa::tile),
+            static_cast<int>(jugador1.getPosition().y / Mapa::tile))) {
+            jugador1 = Personaje(sf::Vector2f(Mapa::tile, Mapa::tile));
+            hitEnemigo = true;
+        }
+        // Verificar colisión con jugador 2
+        if (sf::Vector2i(x, y) == sf::Vector2i(
+            static_cast<int>(jugador2.getPosition().x / Mapa::tile),
+            static_cast<int>(jugador2.getPosition().y / Mapa::tile))) {
+            jugador2 = Personaje(sf::Vector2f((Mapa::ancho - 2) * Mapa::tile, 
+                                            (Mapa::alto - 2) * Mapa::tile));
+            hitEnemigo = true;
+        }
+    }
 };
