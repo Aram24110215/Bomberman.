@@ -239,7 +239,7 @@ public:
                 bombaActiva1 = true;
                 AudioManager::getInstance().playExplosion();
             }
-            else if (event.key.code == sf::Keyboard::Enter && !bombaActiva2) {
+            else if (event.key.code == sf::Keyboard::Return && !bombaActiva2) {  // Cambiar Enter por Return
                 sf::Vector2i gridPos(
                     static_cast<int>((jugador2.getPosition().x + Mapa::tile/2) / Mapa::tile),
                     static_cast<int>((jugador2.getPosition().y + Mapa::tile/2) / Mapa::tile)
