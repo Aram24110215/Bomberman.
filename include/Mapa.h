@@ -5,94 +5,86 @@
 class Mapa {
 public:
     static const int ancho = 15, alto = 11;
-    static const int tile = 16; // Tamaño de cada tile en píxeles
+    static const int tile = 16;
+
+    enum TileType {
+        BORDE_IZQ = 0,
+        BORDE_TOP = 1,
+        BORDE_DER_TOP = 2,
+        BORDE_DER_ABAJO = 3,
+        MURO_DESTRUCTIBLE = 4,
+        PISO = 6,
+        BORDE_IZQ_ABAJO = 12,
+        BORDE_ABAJO = 10,
+        BORDE_DER = 11,
+        POWERUP_BOMBA = 13,
+        POWERUP_FUEGO = 14,
+        POWERUP_VELOCIDAD = 15,
+        POWERUP_PATEAR = 16,
+        POWERUP_ATRAVESAR = 17
+    };
+
     int grid[alto][ancho] = {
-        {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
-        {1,3,3,3,3,3,3,3,3,3,3,3,3,3,1},
-        {1,3,2,3,2,3,2,3,2,3,2,3,2,3,1},
-        {1,3,3,3,3,3,3,3,3,3,3,3,3,3,1},
-        {1,3,2,3,2,3,2,3,2,3,2,3,2,3,1},
-        {1,3,3,3,3,3,3,3,3,3,3,3,3,3,1},
-        {1,3,2,3,2,3,2,3,2,3,2,3,2,3,1},
-        {1,3,3,3,3,3,3,3,3,3,3,3,3,3,1},
-        {1,3,2,3,2,3,2,3,2,3,2,3,2,3,1},
-        {1,3,3,3,3,3,3,3,3,3,3,3,3,3,1},
-        {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
+        {0,1,1,1,1,1,1,1,1,1,1,1,1,1,2},  // Primera fila con bordes
+        {8,6,6,6,6,6,6,6,6,6,6,6,6,6,8},  // Filas del medio
+        {8,6,4,6,4,6,4,6,4,6,4,6,4,6,8},
+        {8,6,6,6,6,6,6,6,6,6,6,6,6,6,8},
+        {8,6,4,6,4,6,4,6,4,6,4,6,4,6,8},
+        {8,6,6,6,6,6,6,6,6,6,6,6,6,6,8},
+        {8,6,4,6,4,6,4,6,4,6,4,6,4,6,8},
+        {8,6,6,6,6,6,6,6,6,6,6,6,6,6,8},
+        {8,6,4,6,4,6,4,6,4,6,4,6,4,6,8},
+        {8,6,6,6,6,6,6,6,6,6,6,6,6,6,8},
+        {11,9,9,9,9,9,9,9,9,9,9,9,9,9,3}  // Última fila con bordes
     };
-
-    sf::Texture texturaTiles;
-    sf::Sprite spriteTile;
-
-    enum TipoMejora { VELOCIDAD, ALCANCE, BOMBA_EXTRA };
-
-    struct Mejora {
-        sf::Vector2f posicion;
-        TipoMejora tipo;
-        sf::Sprite sprite;
-
-        Mejora(sf::Vector2f pos, TipoMejora t) : posicion(pos), tipo(t) {
-            // Configurar el sprite de la mejora
-            sprite.setPosition(pos);
-            sprite.setTextureRect(sf::IntRect(static_cast<int>(t) * Mapa::tile, 0, Mapa::tile, Mapa::tile));
-        }
-
-        void draw(sf::RenderWindow& window) const { // Declarar como const
-            window.draw(sprite);
-        }
-
-        sf::Vector2f getPosition() const { return posicion; }
-        TipoMejora getTipo() const { return tipo; }
-    };
-
-    std::vector<Mejora> mejoras; // Añadir mejoras como miembro de la clase
 
     Mapa() {
         if (!texturaTiles.loadFromFile("assets/images/tileset.png")) {
             // Manejo de error
         }
         spriteTile.setTexture(texturaTiles);
-
-        // Inicializar mejoras
-        mejoras.emplace_back(sf::Vector2f(3 * tile, 3 * tile), VELOCIDAD);
-        mejoras.emplace_back(sf::Vector2f(5 * tile, 5 * tile), ALCANCE);
-        mejoras.emplace_back(sf::Vector2f(7 * tile, 7 * tile), BOMBA_EXTRA);
-
-        for (auto& mejora : mejoras) {
-            mejora.sprite.setTexture(texturaTiles); // Asignar la textura a cada mejora
-        }
     }
 
     void draw(sf::RenderWindow& window) {
         for (int y = 0; y < alto; ++y) {
             for (int x = 0; x < ancho; ++x) {
-                if (grid[y][x] == 1) {
-                    spriteTile.setTextureRect(sf::IntRect(0, 0, tile, tile)); // Bloques sólidos
-                } else if (grid[y][x] == 2) {
-                    spriteTile.setTextureRect(sf::IntRect(tile, 0, tile, tile)); // Muros destructibles
-                } else if (grid[y][x] == 3) {
-                    spriteTile.setTextureRect(sf::IntRect(2 * tile, 0, tile, tile)); // Piso del mapa
-                } else {
-                    continue; // No dibujar celdas vacías
-                }
+                int tileValue = grid[y][x];
+                int tileX = (tileValue % 8) * tile;
+                int tileY = (tileValue / 8) * tile;
+                
+                spriteTile.setTextureRect(sf::IntRect(tileX, tileY, tile, tile));
                 spriteTile.setPosition(x * tile, y * tile);
                 window.draw(spriteTile);
             }
         }
-
-        // Dibujar mejoras
-        for (const auto& mejora : mejoras) {
-            mejora.draw(window);
-        }
     }
 
     bool esSolido(int x, int y) const {
-        if (x < 0 || y < 0 || x >= ancho || y >= alto) return true; // Fuera del mapa
-        return grid[y][x] == 1 || grid[y][x] == 2; // Bloques sólidos o destructibles
+        if (x < 0 || y < 0 || x >= ancho || y >= alto) return true;
+        int valor = grid[y][x];
+        return valor != PISO; // Todo excepto el piso es sólido
     }
 
     void destruirBloque(int x, int y) {
-        if (x >= 0 && y >= 0 && x < ancho && y < alto && grid[y][x] == 2) {
-            grid[y][x] = 3; // Cambiar el muro destructible a piso
+        if (x >= 0 && y >= 0 && x < ancho && y < alto && grid[y][x] == MURO_DESTRUCTIBLE) {
+            grid[y][x] = PISO;
         }
     }
+
+    void generarPowerup(int x, int y) {
+        if (rand() % 100 < 30) {
+            int tipo = rand() % 5;
+            grid[y][x] = POWERUP_BOMBA + tipo;
+        } else {
+            grid[y][x] = PISO;
+        }
+    }
+
+    bool esPowerup(int x, int y) const {
+        return grid[y][x] >= POWERUP_BOMBA && grid[y][x] <= POWERUP_ATRAVESAR;
+    }
+
+private:
+    sf::Texture texturaTiles;
+    sf::Sprite spriteTile;
 };

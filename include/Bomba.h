@@ -12,9 +12,9 @@ public:
     bool enExpansion = false; // Indica si la bomba está en expansión
     bool terminada = false; // Indica si la explosión terminó
     bool esJugador1;  // Nueva variable para rastrear qué jugador colocó la bomba
-
+    bool hitEnemigo;
     Bomba(sf::Vector2i pos, bool esJugador1 = true) 
-        : gridPos(pos), esJugador1(esJugador1) {
+        : gridPos(pos), esJugador1(esJugador1), terminada(false), hitEnemigo(false) {
         // Define the transparency color once
         const sf::Color transparentColor(112, 234, 122); // #70EA7A
 

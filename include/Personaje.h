@@ -1,10 +1,19 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include "Mapa.h"
+#include "AudioManager.h"
+
+// filepath: c:\Users\noema\Documents\GitHub\Bomberman\include\Bomba.h
+#pragma once
+#include <SFML/Graphics.hpp>
+#include "Mapa.h"
+#include "AudioManager.h"  // Add this include
 
 class Personaje {
 public:
-    Personaje(sf::Vector2f position, const std::string& imgPath = "assets/images/animacion.png") {
+    bool estaVivo;
+    
+    Personaje(sf::Vector2f position, const std::string& imgPath = "assets/images/animacion.png") : estaVivo(true) {
         sf::Image image;
         if (!image.loadFromFile(imgPath)) {
             // Error handling
@@ -83,6 +92,38 @@ public:
         return sprite.getPosition();
     }
 
+    void recogerPowerup(int tipo) {
+        switch(tipo) {
+            case Mapa::POWERUP_BOMBA:
+                if (maxBombas < 8) maxBombas++;
+                break;
+            case Mapa::POWERUP_FUEGO:
+                if (alcanceExplosion < 8) alcanceExplosion++;
+                break;
+            case Mapa::POWERUP_VELOCIDAD:
+                if (velocidadBase < 120.0f) velocidadBase += 20.0f;
+                break;
+            case Mapa::POWERUP_PATEAR:
+                puedePatear = true;
+                break;
+            case Mapa::POWERUP_ATRAVESAR:
+                puedeAtravesar = true;
+                break;
+        }
+        AudioManager::getInstance().playPowerup();
+    }
+
+    void morir() {
+        estaVivo = false;
+        sprite.setColor(sf::Color(128, 128, 128, 200)); // Efecto gris al morir
+    }
+
+    void resetearPosicion(sf::Vector2f pos) {
+        sprite.setPosition(pos);
+        estaVivo = true;
+        sprite.setColor(sf::Color::White);
+    }
+
 private:
     sf::Sprite sprite;
     sf::Texture texture;
@@ -93,6 +134,10 @@ private:
     int numFrames = 3; // Número de frames por dirección
     static const int frameWidth = 16;  // Tamaño correcto del frame
     static const int frameHeight = 16; // Tamaño correcto del frame
-    int alcanceExplosiones = 1;
+    int numBombas = 1;
     int maxBombas = 1;
+    int alcanceExplosion = 1;
+    float velocidadBase = 60.0f;
+    bool puedePatear = false;
+    bool puedeAtravesar = false;
 };
