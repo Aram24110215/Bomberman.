@@ -31,7 +31,7 @@ public:
         generarMapa();
     }
 
-    void draw(sf::RenderWindow& window) {
+    void Draw(sf::RenderWindow& window) {
         for (int y = 0; y < alto; ++y) {
             for (int x = 0; x < ancho; ++x) {
                 renderTile(window, x, y);
@@ -39,12 +39,12 @@ public:
         }
     }
 
-    bool esSolido(int x, int y) const {
+    bool EsSolido(int x, int y) const {
         if (!esPosicionValida(x, y)) return true;
         return grid[y][x] != PISO && !esPowerup(x, y);
     }
 
-    void destruirBloque(int x, int y) {
+    void DestruirBloque(int x, int y) {
         if (!esPosicionValida(x, y)) return;
         
         if (grid[y][x] == BLOQUE_DESTRUCTIBLE || grid[y][x] == MURO_DESTRUCTIBLE) {
@@ -64,6 +64,10 @@ public:
         return tile == BLOQUE_DESTRUCTIBLE || tile == MURO_DESTRUCTIBLE;
     }
 
+    bool EsDestructible(int x, int y) const {
+        return esDestructible(x, y);
+    }
+
     bool esPowerup(int x, int y) const {
         if (!esPosicionValida(x, y)) return false;
         return grid[y][x] >= POWERUP_BOMBA && grid[y][x] <= POWERUP_ATRAVESAR;
@@ -77,7 +81,7 @@ public:
     int grid[alto][ancho];
 
     // Método para obtener el valor de un tile
-    int getTile(int x, int y) const {
+    int GetTile(int x, int y) const {
         if (esPosicionValida(x, y)) {
             return grid[y][x];
         }
@@ -85,7 +89,7 @@ public:
     }
 
     // Método para establecer un tile
-    void setTile(int x, int y, int value) {
+    void SetTile(int x, int y, int value) {
         if (esPosicionValida(x, y)) {
             grid[y][x] = value;
         }

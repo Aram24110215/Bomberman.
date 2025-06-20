@@ -4,12 +4,12 @@
 
 class AudioManager {
 public:
-    static AudioManager& getInstance() {
+    static AudioManager& GetInstance() {
         static AudioManager instance;
         return instance;
     }
 
-    void cargarSonidos() {
+    void CargarSonidos() {
         if (!explosionBuffer.loadFromFile("assets/sounds/explosion.wav"))
             throw std::runtime_error("Error cargando sonido de explosión");
         if (!powerupBuffer.loadFromFile("assets/sounds/powerup.wav"))
@@ -23,13 +23,13 @@ public:
         musica.setLoop(true);
     }
 
-    void playExplosion() { explosion.play(); }
-    void playPowerup() { powerup.play(); }
-    void playMusica() { musica.play(); }
-    void stopMusica() { musica.stop(); }
+    void PlayExplosion() { explosion.play(); }
+    void PlayPowerup() { powerup.play(); }
+    void PlayMusica() { musica.play(); }
+    void StopMusica() { musica.stop(); }
 
 private:
-    AudioManager() { cargarSonidos(); }
+    AudioManager() { CargarSonidos(); }
     sf::SoundBuffer explosionBuffer, powerupBuffer, musicaBuffer;
     sf::Sound explosion, powerup, musica;
 };

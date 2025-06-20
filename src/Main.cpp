@@ -23,24 +23,24 @@ Game::Game(sf::RenderWindow& window)
       bombaActiva2(false)
 {
     try {
-        initializeUI();
-        AudioManager::getInstance().playMusica();
+        InitializeUI();
+        AudioManager::GetInstance().PlayMusica();
     } catch (const std::exception& e) {
         std::cerr << "Error initializing game: " << e.what() << std::endl;
         throw;
     }
 }
 
-void Game::initializeUI() {
+void Game::InitializeUI() {
     if (!font.loadFromFile("assets/fonts/pixel.ttf")) {
         throw std::runtime_error("Error loading font");
     }
-    configureText(tiempoText, "Tiempo: " + std::to_string(tiempoPartida), 10, 10);
-    configureText(puntajeText, "P1: 0  P2: 0", 100, 10);
-    configureText(nivelText, "Nivel " + std::to_string(nivel), 200, 10);
+    ConfigureText(tiempoText, "Tiempo: " + std::to_string(tiempoPartida), 10, 10);
+    ConfigureText(puntajeText, "P1: 0  P2: 0", 100, 10);
+    ConfigureText(nivelText, "Nivel " + std::to_string(nivel), 200, 10);
 }
 
-void Game::configureText(sf::Text& text, const std::string& str, float x, float y) {
+void Game::ConfigureText(sf::Text& text, const std::string& str, float x, float y) {
     text.setFont(font);
     text.setString(str);
     text.setCharacterSize(16);
@@ -48,18 +48,18 @@ void Game::configureText(sf::Text& text, const std::string& str, float x, float 
     text.setFillColor(sf::Color::White);
 }
 
-void Game::update() {
+void Game::Update() {
     if (gameState == PLAYING && !juegoTerminado) {
-        updateGame();
-        updateUI();
-        checkGameOver();
+        UpdateGame();
+        UpdateUI();
+        CheckGameOver();
     }
 }
 
-void Game::updateGame() {
+void Game::UpdateGame() {
     auto it = bombas.begin();
     while (it != bombas.end()) {
-        it->update(mapa, jugador1, jugador2);
+        it->Update(mapa, jugador1, jugador2);
 
         if (it->terminada) {
             if (it->esJugador1) {
@@ -76,78 +76,77 @@ void Game::updateGame() {
     }
 
     sf::Vector2i pos1(
-        static_cast<int>(jugador1.getPosition().x / Mapa::tile),
-        static_cast<int>(jugador1.getPosition().y / Mapa::tile)
+        static_cast<int>(jugador1.GetPosition().x / Mapa::tile),
+        static_cast<int>(jugador1.GetPosition().y / Mapa::tile)
     );
-    int tile1 = mapa.getTile(pos1.x, pos1.y);
+    int tile1 = mapa.GetTile(pos1.x, pos1.y);
     if (tile1 >= Mapa::POWERUP_BOMBA && tile1 <= Mapa::POWERUP_ATRAVESAR) {
-        jugador1.recogerPowerup(tile1);
-        mapa.setTile(pos1.x, pos1.y, Mapa::PISO);
-        AudioManager::getInstance().playPowerup();
+        jugador1.RecogerPowerup(tile1);
+        mapa.SetTile(pos1.x, pos1.y, Mapa::PISO);
+        AudioManager::GetInstance().PlayPowerup();
     }
 
     sf::Vector2i pos2(
-        static_cast<int>(jugador2.getPosition().x / Mapa::tile),
-        static_cast<int>(jugador2.getPosition().y / Mapa::tile)
+        static_cast<int>(jugador2.GetPosition().x / Mapa::tile),
+        static_cast<int>(jugador2.GetPosition().y / Mapa::tile)
     );
-    int tile2 = mapa.getTile(pos2.x, pos2.y);
+    int tile2 = mapa.GetTile(pos2.x, pos2.y);
     if (tile2 >= Mapa::POWERUP_BOMBA && tile2 <= Mapa::POWERUP_ATRAVESAR) {
-        jugador2.recogerPowerup(tile2);
-        mapa.setTile(pos2.x, pos2.y, Mapa::PISO);
-        AudioManager::getInstance().playPowerup();
+        jugador2.RecogerPowerup(tile2);
+        mapa.SetTile(pos2.x, pos2.y, Mapa::PISO);
+        AudioManager::GetInstance().PlayPowerup();
     }
 
     float deltaTime = gameClock.restart().asSeconds();
     float velocidad = VELOCIDAD_BASE * deltaTime;
 
-    updatePlayerMovement(jugador1, velocidad, sf::Keyboard::W, sf::Keyboard::S, sf::Keyboard::A, sf::Keyboard::D);
-    updatePlayerMovement(jugador2, velocidad, sf::Keyboard::Up, sf::Keyboard::Down, sf::Keyboard::Left, sf::Keyboard::Right);
+    UpdatePlayerMovement(jugador1, velocidad, sf::Keyboard::W, sf::Keyboard::S, sf::Keyboard::A, sf::Keyboard::D);
+    UpdatePlayerMovement(jugador2, velocidad, sf::Keyboard::Up, sf::Keyboard::Down, sf::Keyboard::Left, sf::Keyboard::Right);
 }
 
-void Game::updatePlayerMovement(Personaje& jugador, float velocidad,
+void Game::UpdatePlayerMovement(Personaje& jugador, float velocidad,
                                 sf::Keyboard::Key up, sf::Keyboard::Key down,
                                 sf::Keyboard::Key left, sf::Keyboard::Key right) {
-    if (sf::Keyboard::isKeyPressed(up)) jugador.move(0, -velocidad, mapa);
-    if (sf::Keyboard::isKeyPressed(down)) jugador.move(0, velocidad, mapa);
-    if (sf::Keyboard::isKeyPressed(left)) jugador.move(-velocidad, 0, mapa);
-    if (sf::Keyboard::isKeyPressed(right)) jugador.move(velocidad, 0, mapa);
+    if (sf::Keyboard::isKeyPressed(up)) jugador.Move(0, -velocidad, mapa);
+    if (sf::Keyboard::isKeyPressed(down)) jugador.Move(0, velocidad, mapa);
+    if (sf::Keyboard::isKeyPressed(left)) jugador.Move(-velocidad, 0, mapa);
+    if (sf::Keyboard::isKeyPressed(right)) jugador.Move(velocidad, 0, mapa);
 }
 
-void Game::updateUI() {
+void Game::UpdateUI() {
     int tiempoRestante = tiempoPartida - static_cast<int>(tiempoClock.getElapsedTime().asSeconds());
     tiempoText.setString("Tiempo: " + std::to_string(tiempoRestante));
     puntajeText.setString("P1: " + std::to_string(puntajeJ1) +
                           "  P2: " + std::to_string(puntajeJ2));
 }
 
-void Game::checkGameOver() {
+void Game::CheckGameOver() {
     int tiempoRestante = tiempoPartida - static_cast<int>(tiempoClock.getElapsedTime().asSeconds());
 
     if (tiempoRestante <= 0 || (!jugador1.estaVivo && !jugador2.estaVivo)) {
         juegoTerminado = true;
         gameState = GAME_OVER;
-        AudioManager::getInstance().stopMusica();
     }
     else if (jugador1.estaVivo && !jugador2.estaVivo) {
         puntajeJ1 += PUNTOS_VICTORIA;
-        siguienteNivel();
+        SiguienteNivel();
     }
     else if (!jugador1.estaVivo && jugador2.estaVivo) {
         puntajeJ2 += PUNTOS_VICTORIA;
-        siguienteNivel();
+        SiguienteNivel();
     }
 }
 
-void Game::siguienteNivel() {
+void Game::SiguienteNivel() {
     nivel++;
     mapa = Mapa();
     tiempoClock.restart();
     nivelText.setString("Nivel " + std::to_string(nivel));
-    jugador1.resetearPosicion(sf::Vector2f(Mapa::tile, Mapa::tile));
-    jugador2.resetearPosicion(sf::Vector2f((Mapa::ancho - 2) * Mapa::tile, (Mapa::alto - 2) * Mapa::tile));
+    jugador1.ResetearPosicion(sf::Vector2f(Mapa::tile, Mapa::tile));
+    jugador2.ResetearPosicion(sf::Vector2f((Mapa::ancho - 2) * Mapa::tile, (Mapa::alto - 2) * Mapa::tile));
 }
 
-void Game::handleInput(sf::Event& event) {
+void Game::HandleInput(sf::Event& event) {
     switch(gameState) {
         case MENU:
             if (event.type == sf::Event::KeyPressed &&
@@ -158,50 +157,50 @@ void Game::handleInput(sf::Event& event) {
             break;
 
         case PLAYING:
-            handlePlayingInput(event);
+            HandlePlayingInput(event);
             break;
 
         case GAME_OVER:
             if (event.type == sf::Event::KeyPressed &&
                 event.key.code == sf::Keyboard::R) {
-                resetGame();
+                ResetGame();
             }
             break;
 
         case VICTORY:
             if (event.type == sf::Event::KeyPressed &&
                 event.key.code == sf::Keyboard::Enter) {
-                siguienteNivel();
+                SiguienteNivel();
                 gameState = PLAYING;
             }
             break;
     }
 }
 
-void Game::handlePlayingInput(sf::Event& event) {
+void Game::HandlePlayingInput(sf::Event& event) {
     if (event.type == sf::Event::KeyPressed) {
         if (event.key.code == sf::Keyboard::Space && !bombaActiva1) {
             sf::Vector2i gridPos(
-                static_cast<int>((jugador1.getPosition().x + Mapa::tile/2) / Mapa::tile),
-                static_cast<int>((jugador1.getPosition().y + Mapa::tile/2) / Mapa::tile)
+                static_cast<int>((jugador1.GetPosition().x + Mapa::tile/2) / Mapa::tile),
+                static_cast<int>((jugador1.GetPosition().y + Mapa::tile/2) / Mapa::tile)
             );
             bombas.emplace_back(gridPos, true);
             bombaActiva1 = true;
-            AudioManager::getInstance().playExplosion();
+            AudioManager::GetInstance().PlayExplosion();
         }
         else if (event.key.code == sf::Keyboard::Return && !bombaActiva2) {
             sf::Vector2i gridPos(
-                static_cast<int>((jugador2.getPosition().x + Mapa::tile/2) / Mapa::tile),
-                static_cast<int>((jugador2.getPosition().y + Mapa::tile/2) / Mapa::tile)
+                static_cast<int>((jugador2.GetPosition().x + Mapa::tile/2) / Mapa::tile),
+                static_cast<int>((jugador2.GetPosition().y + Mapa::tile/2) / Mapa::tile)
             );
             bombas.emplace_back(gridPos, false);
             bombaActiva2 = true;
-            AudioManager::getInstance().playExplosion();
+            AudioManager::GetInstance().PlayExplosion();
         }
     }
 }
 
-void Game::resetGame() {
+void Game::ResetGame() {
     gameState = MENU;
     juegoTerminado = false;
     nivel = 1;
@@ -212,35 +211,35 @@ void Game::resetGame() {
     bombaActiva2 = false;
     bombas.clear();
     mapa = Mapa();
-    jugador1.resetearPosicion(sf::Vector2f(Mapa::tile, Mapa::tile));
-    jugador2.resetearPosicion(sf::Vector2f((Mapa::ancho - 2) * Mapa::tile,
+    jugador1.ResetearPosicion(sf::Vector2f(Mapa::tile, Mapa::tile));
+    jugador2.ResetearPosicion(sf::Vector2f((Mapa::ancho - 2) * Mapa::tile,
                                            (Mapa::alto - 2) * Mapa::tile));
     tiempoClock.restart();
-    AudioManager::getInstance().playMusica();
+    AudioManager::GetInstance().PlayMusica();
 }
 
-void Game::render() {
+void Game::Render() {
     window.clear(sf::Color::Black);
 
     switch(gameState) {
         case MENU:
-            renderMenu();
+            RenderMenu();
             break;
         case PLAYING:
-            renderGame();
+            RenderGame();
             break;
         case GAME_OVER:
-            renderGameOver();
+            RenderGameOver();
             break;
         case VICTORY:
-            renderVictory();
+            RenderVictory();
             break;
     }
 
     window.display();
 }
 
-void Game::renderText(sf::Text& text, const std::string& str, float x, float y, bool centered) {
+void Game::RenderText(sf::Text& text, const std::string& str, float x, float y, bool centered) {
     text.setString(str);
     if (centered) {
         sf::FloatRect bounds = text.getLocalBounds();
@@ -250,42 +249,42 @@ void Game::renderText(sf::Text& text, const std::string& str, float x, float y, 
     window.draw(text);
 }
 
-void Game::renderMenu() {
+void Game::RenderMenu() {
     sf::Text menuText;
-    configureText(menuText, "BOMBERMAN\nPresiona ENTER para jugar",
+    ConfigureText(menuText, "BOMBERMAN\nPresiona ENTER para jugar",
                   window.getSize().x/2.0f, window.getSize().y/2.0f);
-    renderText(menuText, menuText.getString(), menuText.getPosition().x,
+    RenderText(menuText, menuText.getString(), menuText.getPosition().x,
                menuText.getPosition().y, true);
 }
 
-void Game::renderGame() {
-    mapa.draw(window);
+void Game::RenderGame() {
+    mapa.Draw(window);
     for (auto& bomba : bombas) {
-        bomba.draw(window, mapa);
+        bomba.Draw(window, mapa);
     }
-    jugador1.draw(window);
-    jugador2.draw(window);
+    jugador1.Draw(window);
+    jugador2.Draw(window);
 
     window.draw(tiempoText);
     window.draw(puntajeText);
     window.draw(nivelText);
 }
 
-void Game::renderGameOver() {
+void Game::RenderGameOver() {
     sf::Text gameOverText;
     std::string winner = (puntajeJ1 > puntajeJ2) ? "¡Jugador 1 Gana!" :
                          (puntajeJ2 > puntajeJ1) ? "¡Jugador 2 Gana!" :
                          "¡Empate!";
-    configureText(gameOverText, "GAME OVER\n" + winner + "\nPresiona R para reiniciar",
+    ConfigureText(gameOverText, "GAME OVER\n" + winner + "\nPresiona R para reiniciar",
                   window.getSize().x/2, window.getSize().y/2);
     gameOverText.setOrigin(gameOverText.getLocalBounds().width/2,
                            gameOverText.getLocalBounds().height/2);
     window.draw(gameOverText);
 }
 
-void Game::renderVictory() {
+void Game::RenderVictory() {
     sf::Text victoryText;
-    configureText(victoryText, "¡NIVEL COMPLETADO!\nPresiona ENTER para continuar",
+    ConfigureText(victoryText, "¡NIVEL COMPLETADO!\nPresiona ENTER para continuar",
                   window.getSize().x/2, window.getSize().y/2);
     victoryText.setOrigin(victoryText.getLocalBounds().width/2,
                           victoryText.getLocalBounds().height/2);
@@ -305,11 +304,11 @@ int main() {
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed)
                 window.close();
-            game.handleInput(event);
+            game.HandleInput(event);
         }
 
-        game.update();
-        game.render();
+        game.Update();
+        game.Render();
     }
 
     return 0;

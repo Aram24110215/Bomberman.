@@ -1,0 +1,95 @@
+@startuml Bomberman
+
+class Game {
+    - gameState : GameState
+    - juegoTerminado : bool
+    - tiempoPartida : int
+    - nivel : int
+    - puntajeJ1 : int
+    - puntajeJ2 : int
+    - mapa : Mapa
+    - jugador1 : Personaje
+    - jugador2 : Personaje
+    - bombas : vector<Bomba>
+    - bombaActiva1 : bool
+    - bombaActiva2 : bool
+    --
+    + Game(window)
+    + InitializeUI()
+    + Update()
+    + Render()
+    + HandleInput(event)
+    + SiguienteNivel()
+    + ResetGame()
+}
+
+class Mapa {
+    --
+    + Mapa()
+    + Draw(window)
+    + EsSolido(x, y)
+    + DestruirBloque(x, y)
+    + EsDestructible(x, y)
+    + GetTile(x, y)
+    + SetTile(x, y, value)
+}
+
+class Personaje {
+    - frameTime : float
+    - currentFrame : int
+    - currentDirection : int
+    - numFrames : int
+    - numBombas : int
+    - maxBombas : int
+    - alcanceExplosion : int
+    - velocidadBase : float
+    - puedePatear : bool
+    - puedeAtravesar : bool
+    --
+    + Personaje(position, imgPath)
+    + Move(offsetX, offsetY, mapa)
+    + UpdateAnimation(direction)
+    + Draw(window)
+    + GetPosition()
+    + RecogerPowerup(tipo)
+    + Morir()
+    + ResetearPosicion(pos)
+}
+
+class Bomba {
+    - frameWidth : int
+    - frameHeight : int
+    - numFrames : int
+    - numFramesExplosion : int
+    - currentFrame : int
+    - frameTime : float
+    - explosionTime : float
+    --
+    + Bomba(pos, esJugador1)
+    + Update(mapa, jugador1, jugador2)
+    + Draw(window, mapa)
+    + explotar(mapa, jugador1, jugador2)
+}
+
+class AudioManager {
+    --
+    + static GetInstance()
+    + CargarSonidos()
+    + PlayExplosion()
+    + PlayPowerup()
+    + PlayMusica()
+    + StopMusica()
+}
+
+
+Game *-- Mapa : tiene
+Game *-- Personaje : tiene
+Game *-- Bomba : tiene (vector)
+Game ..> AudioManager : usa
+Personaje ..> Mapa : usa
+Personaje ..> AudioManager : usa
+Bomba ..> Mapa : usa
+Bomba ..> Personaje : usa
+Bomba ..> AudioManager : usa
+
+@enduml

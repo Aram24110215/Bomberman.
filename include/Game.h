@@ -46,23 +46,23 @@ private:
 public:
     Game(sf::RenderWindow& window);
 
-    void initializeUI();
-    void configureText(sf::Text& text, const std::string& str, float x, float y);
-    void update();
-    void updateGame();
-    void updatePlayerMovement(Personaje& jugador, float velocidad,
+    void InitializeUI();
+    void ConfigureText(sf::Text& text, const std::string& str, float x, float y);
+    void Update();
+    void UpdateGame();
+    void UpdatePlayerMovement(Personaje& jugador, float velocidad,
                              sf::Keyboard::Key up, sf::Keyboard::Key down,
                              sf::Keyboard::Key left, sf::Keyboard::Key right);
-    void updateUI();
-    void checkGameOver();
-    void siguienteNivel();
-    void handleInput(sf::Event& event);
-    void handlePlayingInput(sf::Event& event);
-    void resetGame();
-    void render();
-    void renderText(sf::Text& text, const std::string& str, float x, float y, bool centered = false);
-    void renderMenu();
-    void renderGame();
-    void renderGameOver();
-    void renderVictory();
+    void UpdateUI();
+    void CheckGameOver();
+    void SiguienteNivel();
+    void HandleInput(sf::Event& event);
+    void HandlePlayingInput(sf::Event& event);
+    void ResetGame();
+    void Render();
+    void RenderText(sf::Text& text, const std::string& str, float x, float y, bool centered = false);
+    void RenderMenu();
+    void RenderGame();
+    void RenderGameOver();
+    void RenderVictory();
 };

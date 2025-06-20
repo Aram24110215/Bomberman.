@@ -3,11 +3,6 @@
 #include "Mapa.h"
 #include "AudioManager.h"
 
-// filepath: c:\Users\noema\Documents\GitHub\Bomberman\include\Bomba.h
-#pragma once
-#include <SFML/Graphics.hpp>
-#include "Mapa.h"
-#include "AudioManager.h"  // Add this include
 
 class Personaje {
 public:
@@ -31,7 +26,7 @@ public:
         sprite.setScale(1.0f, 1.0f); // Ya que frameWidth y Mapa::tile son ambos 16
     }
 
-    void move(float offsetX, float offsetY, Mapa& mapa) {
+    void Move(float offsetX, float offsetY, Mapa& mapa) {
         sf::Vector2f next = sprite.getPosition() + sf::Vector2f(offsetX, offsetY);
 
         // Verificar colisiones en las cuatro esquinas del sprite
@@ -46,53 +41,49 @@ public:
 
         // Verificar si alguna de las esquinas colisiona con un bloque sólido
         bool canMove = true;
-        if (mapa.esSolido(leftTile, topTile) || 
-            mapa.esSolido(rightTile, topTile) ||
-            mapa.esSolido(leftTile, bottomTile) || 
-            mapa.esSolido(rightTile, bottomTile)) {
+        if (mapa.EsSolido(leftTile, topTile) || 
+            mapa.EsSolido(rightTile, topTile) ||
+            mapa.EsSolido(leftTile, bottomTile) || 
+            mapa.EsSolido(rightTile, bottomTile)) {
             canMove = false;
         }
 
         // Si no hay colisión, mover el personaje y actualizar la animación
         if (canMove) {
             sprite.move(offsetX, offsetY);
-            
             // Actualizar la animación según la dirección del movimiento
             if (offsetX > 0) {
-                updateAnimation(0); // Derecha
+                UpdateAnimation(0); // Derecha
             } else if (offsetX < 0) {
-                updateAnimation(1); // Izquierda
+                UpdateAnimation(1); // Izquierda
             } else if (offsetY > 0) {
-                updateAnimation(2); // Abajo
+                UpdateAnimation(2); // Abajo
             } else if (offsetY < 0) {
-                updateAnimation(3); // Arriba
+                UpdateAnimation(3); // Arriba
             }
         }
     }
 
-    void updateAnimation(int direction) {
+    void UpdateAnimation(int direction) {
         currentDirection = direction;
-        
-        // Actualizar el frame de la animación
         if (animationClock.getElapsedTime().asSeconds() >= frameTime) {
             currentFrame = (currentFrame + 1) % numFrames;
-            // Calcular la posición del frame en la spritesheet
             int frameX = currentFrame * frameWidth;
-            int frameY = direction * frameHeight; // Cada dirección ocupa una fila de 16 píxeles
+            int frameY = direction * frameHeight;
             sprite.setTextureRect(sf::IntRect(frameX, frameY, frameWidth, frameHeight));
             animationClock.restart();
         }
     }
 
-    void draw(sf::RenderWindow& window) {
+    void Draw(sf::RenderWindow& window) {
         window.draw(sprite);
     }
 
-    sf::Vector2f getPosition() const {
+    sf::Vector2f GetPosition() const {
         return sprite.getPosition();
     }
 
-    void recogerPowerup(int tipo) {
+    void RecogerPowerup(int tipo) {
         switch(tipo) {
             case Mapa::POWERUP_BOMBA:
                 if (maxBombas < 8) maxBombas++;
@@ -110,15 +101,15 @@ public:
                 puedeAtravesar = true;
                 break;
         }
-        AudioManager::getInstance().playPowerup();
+        AudioManager::GetInstance().PlayPowerup();
     }
 
-    void morir() {
+    void Morir() {
         estaVivo = false;
         sprite.setColor(sf::Color(128, 128, 128, 200)); // Efecto gris al morir
     }
 
-    void resetearPosicion(sf::Vector2f pos) {
+    void ResetearPosicion(sf::Vector2f pos) {
         sprite.setPosition(pos);
         estaVivo = true;
         sprite.setColor(sf::Color::White);
