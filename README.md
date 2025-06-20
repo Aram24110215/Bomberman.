@@ -35,6 +35,11 @@ Bomberman/
 ## Créditos
 - Proyecto realizado como entrega final para la materia de Programación.
 
+## Registros
+
+- 24110215 
+- 23310318
+
 
 
 
